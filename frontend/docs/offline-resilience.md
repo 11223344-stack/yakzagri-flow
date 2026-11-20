@@ -45,3 +45,10 @@
 - Manual: `Step3Review` with `isOffline=true` enqueues, refresh preserves draft, go online → replay + fetch → trade appears.
 
 Run: `pnpm test -- offline.queue offline.backoff tradeStore.optimistic --verbose`
+
+## Dev-test diagnostic view for IndexedDB queues (issue #433)
+
+- `src/app/dev-test/OfflineCacheFixtures.tsx` renders a live visualizer for the offline IndexedDB cache so offline behavior can be inspected without opening browser DevTools.
+- The view lists every currently stored IndexedDB key with a payload summary (action type, endpoint, method, attempts, and creation time), refreshing on an interval and after each action.
+- Buttons let you inject test mutations into the queue, clear the queue, and simulate network drops (toggling the offline state) to exercise replay and backoff paths.
+- The diagnostic view is gated on `process.env.NODE_ENV !== "production"`; in production builds it renders nothing, so it is never shipped to end users.
