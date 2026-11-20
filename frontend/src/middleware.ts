@@ -19,6 +19,21 @@ const WALLET_FRAME_ALLOWLIST = [
 ];
 
 /**
+ * Trusted Freighter and Stellar origins permitted to be embedded as frames
+ * for external wallet bridges (issue #457). Kept separate from the broader
+ * `connect-src` allowlist so `frame-src` stays strictly scoped to approved
+ * wallet domains and cannot be widened by connect-only origins.
+ */
+const TRUSTED_WALLET_FRAME_ORIGINS = [
+  "https://freighter.app",
+  "https://*.freighter.app",
+  "https://stellar.org",
+  "https://*.stellar.org",
+  "https://accountviewer.stellar.org",
+  "https://laboratory.stellar.org",
+];
+
+/**
  * IPFS/storage origins used for video proof upload and playback.
  * `gateway.pinata.cloud` serves pinned proof videos; `api.pinata.cloud`
  * receives the upload from VideoUploadCard.
@@ -114,12 +129,24 @@ export function buildConnectSrc(): string[] {
   return Array.from(sources).join(" ");
 }
 
+/**
+ * Build the `frame-src` directive value.
+ *
+ * Strictly allowlists trusted Freighter and Stellar wallet origins (plus the
+ * WalletConnect bridge origins) so untrusted third-party iframes are blocked
+ * from being embedded. No wildcard `https:` fallback is emitted here.
+ */
 export function buildFrameSrc(): string[] {
   const configuredOrigins = (process.env.WALLET_FRAME_ALLOWLIST ?? "")
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean);
-  return ["'self'", ...WALLET_FRAME_ALLOWLIST, ...configuredOrigins].join(" ");
+  return [
+    "'self'",
+    ...TRUSTED_WALLET_FRAME_ORIGINS,
+    ...WALLET_FRAME_ALLOWLIST,
+    ...configuredOrigins,
+  ].join(" ");
 }
 
 /**
