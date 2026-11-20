@@ -47,3 +47,35 @@ export function registerServiceWorker(onUpdateAvailable?: (waiting: ServiceWorke
     });
   });
 }
+
+/**
+ * Navigation fallback for offline users.
+ *
+ * When a navigation request fails because the network is unavailable, the
+ * service worker serves the branded `/offline.html` page instead of the
+ * browser's default network error. This is a no-op when the SW is not
+ * supported or not yet controlling the page.
+ */
+export function registerOfflineNavigationFallback() {
+  if (typeof window === "undefined") return;
+  if (!("serviceWorker" in navigator)) return;
+
+  const OFFLINE_URL = "/offline.html";
+
+  const handleOffline = () => {
+    if (window.location.pathname === OFFLINE_URL) return;
+    window.location.assign(OFFLINE_URL);
+  };
+
+  window.addEventListener("offline", () => {
+    // Only redirect on navigation failures, not while the user is active.
+    if (navigator.onLine) return;
+  });
+
+  navigator.serviceWorker.addEventListener("message", (event) => {
+    const data = event.data as { type?: string } | undefined;
+    if (data?.type === "NAVIGATION_OFFLINE") {
+      handleOffline();
+    }
+  });
+}
