@@ -33,6 +33,24 @@ const IPFS_MEDIA_ORIGINS = [
 const CSP_HEADER = "Content-Security-Policy";
 
 /**
+ * Generate a cryptographically random per-request nonce.
+ *
+ * Uses `crypto.getRandomValues` (Web Crypto, available in the Edge runtime)
+ * to produce 16 random bytes, base64-encoded. This is the value Next.js reads
+ * from the `x-nonce` request header to stamp its inline scripts and font
+ * loader styles with the matching `nonce` attribute.
+ */
+export function generateNonce(): string {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  let binary = "";
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+  return btoa(binary);
+}
+
+/**
  * Build the Content-Security-Policy for a given request.
  *
  * Per-request nonce strategy: `middleware` generates a fresh nonce for every
@@ -51,14 +69,14 @@ export function buildCsp(nonce: string): string {
   const directives: Record<string, string[]> = {
     "default-src": ["'self'"],
     "script-src": ["'self'", `'nonce-${nonce}'`, "'strict-dynamic'", "https:"],
-    "style-src": ["'self'", "'unsafe-inline'"],
+    "style-src": ["'self'", `'nonce-${nonce}'`, "'unsafe-inline'"],
     "img-src": ["'self'", "data:", "blob:", "https:"],
     "media-src": ["'self'", "blob:"],
     "font-src": ["'self'", "data:"],
     "connect-src": buildConnectSrc(),
     "frame-src": buildFrameSrc(),
     "object-src": "'none'",
-    "base-uri": "'self'",
+    "base-uri": ["'self'", `'nonce-${nonce}'`],
     "form-action": "'self'",
     "frame-ancestors": "'none'",
     "upgrade-insecure-requests": "",
@@ -120,7 +138,7 @@ export function applySecurityHeaders(headers: Headers): void {
 }
 
 export function middleware(request: NextRequest) {
-  const nonce = Buffer.from(crypto.randomUUID().replace(/-/g, "")).toString("base64");
+  const nonce = generateNonce();
   const csp = buildCsp(nonce);
   const enforce = process.env.CSP_ENFORCE === "true";
   const headerName = enforce
@@ -128,6 +146,9 @@ export function middleware(request: NextRequest) {
     : "Content-Security-Policy-Report-Only";
 
   const requestHeaders = new Headers(request.headers);
+  // Next.js reads `x-nonce` from the request headers and applies it to the
+  // inline scripts and font loader styles it emits, so every emitted
+  // <script>/<style> tag carries the matching nonce attribute.
   requestHeaders.set("x-nonce", nonce);
 
   const response = NextResponse.next({
