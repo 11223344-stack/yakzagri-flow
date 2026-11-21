@@ -63,6 +63,19 @@ export default function UserReputationPage() {
       ) : (
         <p role="status" className="text-sm text-text-secondary">{translateCopy("ui.reputation_loading")}</p>
       )}
+      {data && data.endorsementCount != null ? (
+        <details className="inline-block text-sm">
+          <summary
+            className="cursor-pointer rounded-full border border-border-default bg-bg-card px-3 py-1 text-text-primary"
+            aria-describedby="endorsement-help"
+          >
+            {data.endorsementCount} verified {data.endorsementCount === 1 ? "endorsement" : "endorsements"}
+          </summary>
+          <p id="endorsement-help" className="mt-2 max-w-sm rounded-lg border border-border-default bg-bg-card p-3 text-xs text-text-secondary">
+            An endorsement comes from a verified counterparty who has settled at least 3 escrows with this farmer.
+          </p>
+        </details>
+      ) : null}
       {data && (
         <div className="space-y-4 rounded-lg border border-border-default bg-bg-card p-6">
           <div>
