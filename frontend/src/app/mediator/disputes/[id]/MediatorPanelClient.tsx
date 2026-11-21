@@ -413,6 +413,7 @@ export default function MediatorPanelClient({ disputeId }: Props) {
         networkPassphrase,
       );
 
+      setTxStatus("Broadcasting ruling to Stellar network...");
       const sendResponse = await rpcServer.sendTransaction(signedTx);
       if (sendResponse.status === "ERROR") {
         throw new Error(
