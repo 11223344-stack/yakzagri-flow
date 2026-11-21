@@ -3,6 +3,7 @@ import { t as translateCopy } from "@/lib/i18n";
 
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Address,
   BASE_FEE,
@@ -160,6 +161,14 @@ export default function MediatorPanelClient({ disputeId }: Props) {
   }, []);
 
   const isMediator = Boolean(address && mediatorAddresses.includes(address));
+  const router = useRouter();
+
+  useEffect(() => {
+    // A connected wallet outside the mediator list is sent to access-denied (#397).
+    if (address && !isMediator) {
+      router.replace("/access-denied");
+    }
+  }, [address, isMediator, router]);
   const canResolve = isMediator && !isSubmittingTx;
   const explorerNetwork =
     process.env.NEXT_PUBLIC_STELLAR_NETWORK === "public" ? "public" : "testnet";
@@ -349,6 +358,11 @@ export default function MediatorPanelClient({ disputeId }: Props) {
   }
 
   async function executeResolution(sellerGetsBps: number) {
+    // Enforced here as well as on the buttons, so no code path can sign a ruling without the mediator role (#397).
+    if (!isMediator) {
+      setTxStatus("Read Only - Authorized Mediators Only");
+      return;
+    }
     if (submittingRef.current) return;
     if (!address) {
       setTxStatus("Connect Freighter first.");
