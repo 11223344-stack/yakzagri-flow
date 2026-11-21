@@ -6,6 +6,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { api, ApiError, type ReputationResponse } from "@/lib/api";
 import { RepScoreRing } from "@/components/ui/RepScoreRing";
+import { ReputationRadar } from "@/components/ui/ReputationRadar";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Button } from "@/components/ui/Button";
 import { AlertCircle, RefreshCw, TrendingUp, CheckCircle2, AlertTriangle, Clock } from "lucide-react";
@@ -281,6 +282,15 @@ export default function ReputationPage() {
         data-testid="reputation-score-factors"
       >
         <h2 className="text-lg font-semibold text-text-primary mb-4">Score Breakdown Factors</h2>
+        <div className="mb-6">
+          <ReputationRadar
+            axes={scoreFactors.map((factor) => ({
+              label: factor.label,
+              score: factor.score,
+              description: `weight ${factor.weight}`,
+            }))}
+          />
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {scoreFactors.map((factor) => (
             <div
