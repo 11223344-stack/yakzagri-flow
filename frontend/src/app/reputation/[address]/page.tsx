@@ -11,6 +11,8 @@ export default function UserReputationPage() {
   const address = params.address;
   const [data, setData] = useState<ReputationResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [origin, setOrigin] = useState("");
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -25,6 +27,21 @@ export default function UserReputationPage() {
       cancelled = true;
     };
   }, [address]);
+
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
+
+  const profileUrl = origin ? `${origin}/reputation/${address}` : "";
+
+  async function copyProfileUrl() {
+    try {
+      await navigator.clipboard.writeText(profileUrl);
+      setCopied(true);
+    } catch {
+      setCopied(false);
+    }
+  }
 
   // Only the outcome text and timestamp are shown, never counterparty details (#406).
   const disputeResolutions = (data?.history ?? []).filter((item) => item.type === "dispute_resolved");
@@ -75,6 +92,33 @@ export default function UserReputationPage() {
             An endorsement comes from a verified counterparty who has settled at least 3 escrows with this farmer.
           </p>
         </details>
+      ) : null}
+      {profileUrl ? (
+        <div className="flex flex-wrap items-center gap-3 text-sm">
+          <button
+            type="button"
+            onClick={copyProfileUrl}
+            className="rounded-lg border border-border-default bg-bg-card px-3 py-2 text-text-primary"
+          >
+            {copied ? "Link copied" : "Copy profile link"}
+          </button>
+          <a
+            href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(profileUrl)}&text=${encodeURIComponent("My verified trader reputation")}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-text-secondary hover:text-text-primary"
+          >
+            Share on Twitter
+          </a>
+          <a
+            href={`https://wa.me/?text=${encodeURIComponent(profileUrl)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-text-secondary hover:text-text-primary"
+          >
+            Share on WhatsApp
+          </a>
+        </div>
       ) : null}
       {data && (
         <div className="space-y-4 rounded-lg border border-border-default bg-bg-card p-6">
