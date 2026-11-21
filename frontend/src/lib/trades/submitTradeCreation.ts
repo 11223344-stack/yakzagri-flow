@@ -1,12 +1,18 @@
 import { signTransaction } from "@stellar/freighter-api";
 import { api, apiConfig } from "@/lib/api";
 import type { CreateTradeRequest } from "@/lib/api";
+import { getNetworkMismatch } from "@/lib/wallet/network";
 
 export async function submitTradeCreation(
   token: string,
   payload: CreateTradeRequest,
   options: { idempotencyKey?: string; correlationId?: string },
 ): Promise<{ tradeId: string; transactionHash: string }> {
+  // Refuse before the trade is created on the server, not only before signing (#410).
+  if (await getNetworkMismatch()) {
+    throw new Error("Switch Freighter to this app's Stellar network before creating a trade.");
+  }
+
   const createResponse = await api.trades.create(token, payload, options);
   const signResult = await signTransaction(createResponse.unsignedXdr, {
     networkPassphrase: apiConfig.getStellarNetworkPassphrase(),
