@@ -2,6 +2,7 @@ import { signTransaction } from "@stellar/freighter-api";
 import { api, apiConfig } from "@/lib/api";
 import type { CreateTradeRequest } from "@/lib/api";
 import { getNetworkMismatch } from "@/lib/wallet/network";
+import { isSigningCancelled, SIGNING_CANCELLED_MESSAGE } from "@/lib/wallet/state-machine";
 
 export async function submitTradeCreation(
   token: string,
@@ -19,6 +20,9 @@ export async function submitTradeCreation(
   });
 
   if (signResult.error !== undefined) {
+    if (isSigningCancelled(signResult.error)) {
+      throw new Error(SIGNING_CANCELLED_MESSAGE);
+    }
     throw new Error(signResult.error.message || "Failed to sign transaction");
   }
 
