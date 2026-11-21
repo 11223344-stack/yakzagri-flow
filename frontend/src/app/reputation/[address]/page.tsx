@@ -26,6 +26,13 @@ export default function UserReputationPage() {
     };
   }, [address]);
 
+  // Only the outcome text and timestamp are shown, never counterparty details (#406).
+  const disputeResolutions = (data?.history ?? []).filter((item) => item.type === "dispute_resolved");
+  const resolvedPercent =
+    data && data.disputedTrades > 0
+      ? Math.min(100, Math.round((disputeResolutions.length / data.disputedTrades) * 100))
+      : 0;
+
   return (
     <section className="mx-auto max-w-5xl space-y-6 px-6 py-8">
       <Link href="/reputation" className="text-sm text-text-secondary hover:text-text-primary">
@@ -55,6 +62,33 @@ export default function UserReputationPage() {
         </dl>
       ) : (
         <p role="status" className="text-sm text-text-secondary">{translateCopy("ui.reputation_loading")}</p>
+      )}
+      {data && (
+        <div className="space-y-4 rounded-lg border border-border-default bg-bg-card p-6">
+          <div>
+            <h2 className="text-lg font-semibold text-text-primary">Past Dispute Resolutions</h2>
+            <p className="mt-1 text-sm text-text-secondary">
+              {data.disputedTrades} disputed {data.disputedTrades === 1 ? "trade" : "trades"},{" "}
+              {disputeResolutions.length} resolved ({resolvedPercent}%)
+            </p>
+          </div>
+          {disputeResolutions.length === 0 ? (
+            <p className="text-sm text-text-secondary">No resolved disputes yet.</p>
+          ) : (
+            <ol className="space-y-3">
+              {disputeResolutions.map((item) => (
+                <li key={item.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                  <span className="rounded-full bg-surface-2 px-2.5 py-0.5 text-xs font-medium text-text-primary">
+                    {item.event}
+                  </span>
+                  <time dateTime={item.timestamp} className="text-xs text-text-muted">
+                    {new Date(item.timestamp).toLocaleDateString()}
+                  </time>
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
       )}
     </section>
   );
