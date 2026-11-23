@@ -29,6 +29,7 @@ import { ConfirmActionModal } from "@/components/ui/ConfirmActionModal";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { NextActionCallout } from "@/components/trades/NextActionCallout";
+import { TransitProgressBar } from "@/components/trade/TransitProgressBar";
 import { resolveNextAction } from "@/lib/trades/nextAction";
 
 const ESCROW_CONTRACT_ID = process.env.NEXT_PUBLIC_CONTRACT_ID?.trim() ?? "";
@@ -336,7 +337,7 @@ export default function TradeDetailPage() {
                 <p className="mt-1 text-xs text-text-muted">{translateCopy("ui.updated_702cad2")}{" "}{formatDate(trade.updatedAt)}</p>
               </div>
               <div className="flex flex-col items-start sm:items-end gap-2">
-                <StatusBadge status={trade.status} size="sm" showIcon={false} />
+                <TradeStatusBadge status={trade.status} />
                 {role !== "observer" && (
                   <span className="text-xs text-text-muted capitalize">{translateCopy("ui.your_role_83a4169")}{" "}{role}</span>
                 )}
@@ -352,6 +353,13 @@ export default function TradeDetailPage() {
                 {balance} {asset}
               </p>
             </div>
+          )}
+
+          {status === "DISPATCHED" && trade.estimatedTransitHours && (
+            <TransitProgressBar
+              dispatchedAt={trade.dispatchedAt ?? trade.updatedAt}
+              estimatedHours={trade.estimatedTransitHours}
+            />
           )}
 
           {/* On-chain + off-chain status panel */}

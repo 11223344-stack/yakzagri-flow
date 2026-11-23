@@ -36,6 +36,10 @@ export interface TradeResponse {
   updatedAt: string;
   eta?: string;
   carrier?: string;
+  /** ISO timestamp the goods were dispatched. */
+  dispatchedAt?: string;
+  /** Estimated dispatch-to-delivery duration from the trade contract. */
+  estimatedTransitHours?: number;
 }
 
 export interface TradeListResponse {
