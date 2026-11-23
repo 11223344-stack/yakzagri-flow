@@ -10,11 +10,29 @@ export default function Step2Negotiation() {
   const { data, update, setStep } = useTrade();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [announcement, setAnnouncement] = useState("");
+  const announceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (announceTimer.current) clearTimeout(announceTimer.current);
+    };
+  }, []);
+
+  const scheduleAnnouncement = (buyerRatio: number, sellerRatio: number) => {
+    if (announceTimer.current) clearTimeout(announceTimer.current);
+    announceTimer.current = setTimeout(() => {
+      setAnnouncement(
+        `Buyer absorbs ${buyerRatio} percent, Seller absorbs ${sellerRatio} percent`
+      );
+    }, 500);
+  };
 
   const handleBuyerRatio = (val: number) => {
     const clamped = Math.min(100, Math.max(0, val));
     update({ buyerRatio: clamped, sellerRatio: 100 - clamped });
     setErrors((prev) => ({ ...prev, sum: "", buyerRatio: "", sellerRatio: "" }));
+    scheduleAnnouncement(clamped, 100 - clamped);
   };
 
   const totalValue = useMemo(
@@ -70,6 +88,11 @@ export default function Step2Negotiation() {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Debounced screen reader announcer for slider updates */}
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
+        {announcement}
+      </div>
+
       {/* Loss ratio */}
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
