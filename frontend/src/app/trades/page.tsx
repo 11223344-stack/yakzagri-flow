@@ -13,7 +13,7 @@ import { api, ApiError, TradeResponse } from "@/lib/api";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Button } from "@/components/ui/Button";
 import { NavButton } from "@/components/ui/Navigation";
-import { StatusBadge, type TradeStatus as BadgeTradeStatus } from "@/components/ui/StatusBadge";
+import { TradeStatusBadge } from "@/components/trade/TradeStatusBadge";
 import { downloadTradesExport } from "@/lib/exportTrades";
 
 type TradeStatus = "all" | "active" | "pending" | "completed" | "disputed";
@@ -74,17 +74,6 @@ function matchesStatus(status: string, filter: TradeStatus) {
   if (filter === "pending") return ["created", "pending", "pending-signature"].includes(normalized);
   if (filter === "completed") return ["completed", "settled", "released", "resolved"].includes(normalized);
   return normalized === "disputed";
-}
-
-function toBadgeStatus(status: string): BadgeTradeStatus {
-  const normalized = status.toLowerCase().replace(/_/g, "-");
-  if (normalized === "disputed") return "disputed";
-  if (normalized === "delivered") return "delivered";
-  if (normalized === "funded" || normalized === "locked") return "locked";
-  if (["completed", "settled", "released", "resolved"].includes(normalized)) return "delivered";
-  if (normalized === "draft" || normalized === "cancelled") return "draft";
-  if (["in-transit", "in transit"].includes(normalized)) return "in-transit";
-  return "pending";
 }
 
 function TradesTableSkeleton() {
@@ -455,7 +444,7 @@ export default function TradesPage() {
                           {formatAddress(counterparty)}
                         </td>
                         <td className="px-4 py-3 text-text-primary">{trade.amountCngn} cNGN</td>
-                        <td className="px-4 py-3"><StatusBadge status={toBadgeStatus(trade.status)} size="sm" /></td>
+                        <td className="px-4 py-3"><TradeStatusBadge status={trade.status} /></td>
                         <td className="px-4 py-3 text-text-secondary">{formatDate(trade.createdAt)}</td>
                       </tr>
                     );

@@ -73,7 +73,7 @@ const STEPS = [
 ];
 
 function CreateTradeInner({ preFilled }: { preFilled: boolean }) {
-  const { step, resetTradeWizard, hasDraft, resumeDraft, discardDraft } = useTrade();
+  const { step, resetTradeWizard } = useTrade();
   const [createdTrade, setCreatedTrade] = useState<{ tradeId: string; transactionHash: string } | null>(null);
 
   const handleTradeCreated = (trade: { tradeId: string; transactionHash: string }) => {
