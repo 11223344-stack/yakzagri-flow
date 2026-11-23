@@ -1,7 +1,7 @@
 "use client";
 import { t as translateCopy } from "@/lib/i18n";
 
-import { useState } from "react";
+import { useState, useEffect, useId } from "react";
 import { useTrade } from "../TradeContext";
 import {
   isValidStellarAddress,
@@ -17,6 +17,24 @@ const UNITS = COMMODITY_UNITS;
 
 export default function Step1Details() {
   const { data, update, setStep } = useTrade();
+  const tipId = useId();
+  const [avgPrice, setAvgPrice] = useState<number | null>(null);
+  const [tipOpen, setTipOpen] = useState(false);
+
+  useEffect(() => {
+    setAvgPrice(null);
+    if (!data.commodity) return;
+    const ctrl = new AbortController();
+    fetch(`/api/market/average-price?commodity=${encodeURIComponent(data.commodity)}&days=7`, { signal: ctrl.signal })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        const v = Number(j?.weightedAverage);
+        setAvgPrice(Number.isFinite(v) && v > 0 ? v : null);
+      })
+      .catch(() => setAvgPrice(null));
+    return () => ctrl.abort();
+  }, [data.commodity]);
+
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
@@ -130,6 +148,30 @@ export default function Step1Details() {
       <div className="flex gap-4">
         <div className="flex flex-col gap-1 flex-1">
           <label htmlFor="price-per-unit" className="text-sm text-text-secondary">{translateCopy("ui.price_per_unit_ngn_bd3ba08")}</label>
+          <span className="relative inline-block">
+            <button
+              type="button"
+              aria-label="Recent average price info"
+              aria-describedby={tipId}
+              onFocus={() => setTipOpen(true)}
+              onBlur={() => setTipOpen(false)}
+              onMouseEnter={() => setTipOpen(true)}
+              onMouseLeave={() => setTipOpen(false)}
+              className="text-xs text-text-muted border border-border-default rounded-full w-5 h-5"
+            >
+              i
+            </button>
+            <span
+              id={tipId}
+              role="tooltip"
+              hidden={!tipOpen}
+              className="absolute z-10 left-0 top-6 w-56 rounded-md bg-bg-elevated border border-border-default px-3 py-2 text-xs text-text-secondary"
+            >
+              {avgPrice !== null
+                ? `7-day weighted average: ${formatCurrencyAmount(avgPrice, data.currency)}`
+                : "No recent trades"}
+            </span>
+          </span>
           <input
             id="price-per-unit"
             type="number"
