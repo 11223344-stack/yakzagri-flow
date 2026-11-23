@@ -85,10 +85,7 @@ export const ManifestSchema = z.object({
   driverPhone: z
     .string()
     .regex(/^\+?[0-9\s\-().]{7,20}$/, t("validation.invalidPhoneFormat")),
-  licensePlate: z
-    .string()
-    .min(2, t("validation.licensePlateMinLength"))
-    .max(20, t("validation.licensePlateMaxLength")),
+  licensePlate: PlateNumberSchema,
   vehicleType: z.string().max(50, t("validation.vehicleTypeMaxLength")).optional(),
   notes: sanitizedNotes(500, t("validation.notesMaxLength")).optional(),
 });
