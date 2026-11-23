@@ -2,7 +2,7 @@
 import { t as translateCopy } from "@/lib/i18n";
 
 import { useState } from "react";
-import { useTrade } from "../TradeContext";
+import { useTrade, calculateTradeTotal } from "../TradeContext";
 import { validateStep2 } from "../validation";
 import { formatNumber } from "@/lib/i18n/format";
 
@@ -17,10 +17,7 @@ export default function Step2Negotiation() {
     setErrors((prev) => ({ ...prev, sum: "", buyerRatio: "", sellerRatio: "" }));
   };
 
-  const totalValue =
-    data.quantity && data.pricePerUnit
-      ? parseFloat(data.quantity) * parseFloat(data.pricePerUnit)
-      : 0;
+  const totalValue = calculateTradeTotal(data.quantity, data.pricePerUnit);
 
   const buyerLoss = totalValue ? formatNumber((data.buyerRatio / 100) * totalValue) : "—";
   const sellerLoss = totalValue ? formatNumber((data.sellerRatio / 100) * totalValue) : "—";
@@ -29,7 +26,6 @@ export default function Step2Negotiation() {
   const sellerPayout = totalValue ? (data.sellerRatio / 100) * totalValue : 0;
 
   const presetRatios = [50, 70, 80, 100];
-=======
 
   const handleBlur = (field: string) => {
     setTouched((prev) => ({ ...prev, [field]: true }));

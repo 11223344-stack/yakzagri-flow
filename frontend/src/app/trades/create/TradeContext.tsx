@@ -39,6 +39,38 @@ const defaults: TradeData = {
   notes: "",
 };
 
+type NumericInput = string | number | null | undefined;
+
+/** Parses a numeric form input; returns 0 for blank, null, undefined, NaN or non-finite values. */
+export function toSafeNumber(value: NumericInput): number {
+  if (value === null || value === undefined) return 0;
+  if (typeof value === "string" && value.trim() === "") return 0;
+  const n = typeof value === "number" ? value : parseFloat(value);
+  return Number.isFinite(n) ? n : 0;
+}
+
+/** True only when the quantity is a finite number strictly greater than 0. */
+export function isPositiveQuantity(quantity: NumericInput): boolean {
+  return toSafeNumber(quantity) > 0;
+}
+
+/** Total escrow value (quantity × price). Never returns NaN — invalid/blank inputs yield 0. */
+export function calculateTradeTotal(quantity: NumericInput, pricePerUnit: NumericInput): number {
+  const qty = toSafeNumber(quantity);
+  const price = toSafeNumber(pricePerUnit);
+  if (qty <= 0 || price <= 0) return 0;
+  const total = qty * price;
+  return Number.isFinite(total) ? total : 0;
+}
+
+/** Unit price derived from total / quantity, guarded against division by zero. */
+export function calculateUnitPrice(total: NumericInput, quantity: NumericInput): number {
+  const qty = toSafeNumber(quantity);
+  if (qty <= 0) return 0;
+  const unit = toSafeNumber(total) / qty;
+  return Number.isFinite(unit) ? unit : 0;
+}
+
 const TradeContext = createContext<TradeContextType>({} as TradeContextType);
 
 const STORAGE_KEY = "amana:draft-trade";
