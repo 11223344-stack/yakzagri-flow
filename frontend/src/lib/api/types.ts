@@ -271,4 +271,6 @@ export interface ReputationResponse {
   /** Verified counterparty endorsements (requires >= 3 settled escrows). */
   endorsementCount?: number;
   history: ReputationEvent[];
+  /** Verified counterparty endorsements. Absent when the API does not report them (#408). */
+  endorsementCount?: number | null;
 }
