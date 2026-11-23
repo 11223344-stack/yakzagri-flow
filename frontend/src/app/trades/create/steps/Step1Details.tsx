@@ -184,26 +184,23 @@ export default function Step1Details() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
-  const qty = parseFloat(data.quantity);
   const amount = parseFloat(data.pricePerUnit);
-  const totalValue = !isNaN(qty) && !isNaN(amount) ? qty * amount : NaN;
-  const unitPrice = !isNaN(totalValue) && qty > 0 ? totalValue / qty : NaN;
+  const totalValue = calculateTradeTotal(data.quantity, data.pricePerUnit);
+  const unitPrice = calculateUnitPrice(totalValue, data.quantity);
 
-  const totalDisplay = isNaN(totalValue)
-    ? "—"
-    : formatCurrencyAmount(totalValue, data.currency, {
-        showCode: true,
-        grouping: true,
-      });
+  const totalDisplay = formatCurrencyAmount(totalValue, data.currency, {
+    showCode: true,
+    grouping: true,
+  });
 
-  const unitPriceDisplay = isNaN(unitPrice)
+  const unitPriceDisplay = unitPrice <= 0
     ? "—"
     : formatCurrencyAmount(unitPrice, data.currency, {
         showCode: true,
         grouping: true,
       });
 
-  const isQtyValid = data.quantity !== "" && !isNaN(qty) && qty > 0;
+  const isQtyValid = isPositiveQuantity(data.quantity);
   const isPriceValid = data.pricePerUnit !== "" && !isNaN(amount) && amount > 0;
   const isUnitValid = data.unit !== "";
   const isAddressValid = isValidStellarAddress(data.sellerAddress);
@@ -234,7 +231,7 @@ export default function Step1Details() {
     setTouched(allTouched);
     const errs = validateStep1(data as unknown as Record<string, unknown>);
     setErrors(errs);
-    if (Object.keys(errs).length === 0) {
+    if (Object.keys(errs).length === 0 && isQtyValid) {
       setStep(2);
     }
   };
