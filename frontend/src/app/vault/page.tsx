@@ -79,11 +79,13 @@ export default function VaultPage() {
   const [manifestData, setManifestData] = useState<DriverManifestData | null>(null);
   const [manifestStatus, setManifestStatus] = useState<string | null>(null);
 
-  const fetchVaultData = useCallback(async () => {
+  const fetchVaultData = useCallback(async (silent = false) => {
     if (!token) return;
 
-    setLoading(true);
-    setError(null);
+    if (!silent) {
+      setLoading(true);
+      setError(null);
+    }
 
     try {
       const [statsData, tradesData] = await Promise.all([
@@ -93,11 +95,40 @@ export default function VaultPage() {
       setStats(statsData);
       setRecentTrades(tradesData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load vault data");
+      if (!silent) setError(err instanceof Error ? err.message : "Failed to load vault data");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [token]);
+
+  // Silent 60s poll; suspended while the tab is hidden, refreshed on re-focus.
+  useEffect(() => {
+    if (!isAuthenticated || !token) return;
+    let timer: ReturnType<typeof setInterval> | null = null;
+    const start = () => {
+      if (timer === null) timer = setInterval(() => void fetchVaultData(true), 60_000);
+    };
+    const stop = () => {
+      if (timer !== null) {
+        clearInterval(timer);
+        timer = null;
+      }
+    };
+    const onVisibility = () => {
+      if (document.hidden) {
+        stop();
+      } else {
+        void fetchVaultData(true);
+        start();
+      }
+    };
+    if (!document.hidden) start();
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      stop();
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [isAuthenticated, token, fetchVaultData]);
 
   useEffect(() => {
     if (isAuthenticated && token) {
@@ -318,7 +349,7 @@ export default function VaultPage() {
           <div className="rounded-lg border border-status-danger/20 bg-status-danger/10 px-4 py-5 text-center">
             <p className="text-sm text-status-danger">{error}</p>
             <button
-              onClick={() => void fetchVaultData()}
+              onClick={() => void fetchVaultData(false)}
               className="mt-3 rounded-lg border border-border-default px-4 py-1.5 text-xs font-medium text-text-secondary hover:border-border-hover hover:text-text-primary transition-colors"
             >
               {translateCopy("common.retry")}

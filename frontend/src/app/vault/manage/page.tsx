@@ -21,6 +21,9 @@ import {
   AuditLogCard,
   NetworkBackboneCard,
   VaultFooter,
+  DepositCard,
+  WithdrawalCard,
+  FeeSummary,
 } from "@/components/vault";
 import { getStatusBadgeClasses, getStatusDotClasses } from "@/components/ui/StatusBadge";
 
@@ -612,6 +615,13 @@ export default function VaultManagePage() {
               <div className="space-y-6">
                 {/* Payment overview */}
                 <PaymentOverviewCard totalCngn={totalLocked} />
+
+                <DepositCard />
+                <WithdrawalCard
+                  balance={parseFloat(walletBalance?.balance ?? "0")}
+                  committed={totalLocked}
+                />
+                <FeeSummary amount={totalLocked} />
 
                 {/* Audit log */}
                 <AuditLogCard
