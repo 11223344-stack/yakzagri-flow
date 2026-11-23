@@ -26,10 +26,13 @@ import {
   ModalFooter,
 } from "@/components/ui/Modal";
 import { ConfirmActionModal } from "@/components/ui/ConfirmActionModal";
-import { TradeStatusBadge } from "@/components/trade/TradeStatusBadge";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { CopyButton } from "@/components/ui/CopyButton";
 import { NextActionCallout } from "@/components/trades/NextActionCallout";
 import { TransitProgressBar } from "@/components/trade/TransitProgressBar";
 import { resolveNextAction } from "@/lib/trades/nextAction";
+
+const ESCROW_CONTRACT_ID = process.env.NEXT_PUBLIC_CONTRACT_ID?.trim() ?? "";
 
 function formatDate(dateString: string) {
   return formatDateTime(dateString);
@@ -319,7 +322,17 @@ export default function TradeDetailPage() {
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
               <div>
                 <p className="text-xs uppercase tracking-wide text-text-muted">{translateCopy("ui.trade_id_153d513")}</p>
-                <p className="mt-2 text-xl font-semibold text-text-primary font-mono">{trade.tradeId}</p>
+                <p className="mt-2 flex items-center gap-2 text-xl font-semibold text-text-primary font-mono">
+                  <span className="break-all">{trade.tradeId}</span>
+                  <CopyButton value={trade.tradeId} label="Copy trade ID" />
+                </p>
+                {ESCROW_CONTRACT_ID && (
+                  <p className="mt-2 flex items-center gap-2 text-xs text-text-muted">
+                    <span>Escrow contract:</span>
+                    <span className="font-mono break-all text-text-secondary">{ESCROW_CONTRACT_ID}</span>
+                    <CopyButton value={ESCROW_CONTRACT_ID} label="Copy escrow contract ID" />
+                  </p>
+                )}
                 <p className="mt-2 text-xs text-text-muted">{translateCopy("ui.created_0c78dab")}{" "}{formatDate(trade.createdAt)}</p>
                 <p className="mt-1 text-xs text-text-muted">{translateCopy("ui.updated_702cad2")}{" "}{formatDate(trade.updatedAt)}</p>
               </div>
@@ -412,6 +425,7 @@ export default function TradeDetailPage() {
                   >
                     {confirmedTx.hash}
                   </a>
+                  <CopyButton value={confirmedTx.hash} label="Copy transaction hash" className="ml-1 align-middle" />
                   {confirmedTx.ledger !== null && (
                     <span className="ml-2 text-text-muted">
                       Ledger #{confirmedTx.ledger}
