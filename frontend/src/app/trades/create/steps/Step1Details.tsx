@@ -10,9 +10,10 @@ import {
   formatRelativeDeliveryWindow,
 } from "../validation";
 import { formatCurrencyAmount, getCurrencyInfo } from "@/lib/currency";
+import { getShelfLifeWarning } from "@/lib/trades/shelfLife";
 import { COMMODITY_UNITS } from "@/lib/domain-schemas/trade";
 
-const COMMODITIES = ["Maize", "Rice", "Sorghum", "Millet", "Cassava", "Yam", "Groundnut", "Soybean"];
+const COMMODITIES = ["Maize", "Rice", "Sorghum", "Millet", "Cassava", "Yam", "Groundnut", "Soybean", "Tomato", "Leafy Greens", "Pepper", "Okra"];
 const UNITS = COMMODITY_UNITS;
 
 export default function Step1Details() {
@@ -45,6 +46,8 @@ export default function Step1Details() {
   const isAddressValid = isValidStellarAddress(data.sellerAddress);
   const deliveryDeadlineError = validateDeliveryDeadline(data.deliveryDeadline);
   const deliveryDeadlineSummary = formatRelativeDeliveryWindow(data.deliveryDeadline);
+
+  const shelfLifeWarning = getShelfLifeWarning(data.commodity, data.deliveryDeadline);
 
   const valid =
     data.commodity !== "" &&
@@ -194,6 +197,17 @@ export default function Step1Details() {
         />
         {deliveryDeadlineSummary && !deliveryDeadlineError && (
           <p className="text-text-secondary text-xs mt-1">{deliveryDeadlineSummary}</p>
+        )}
+        {shelfLifeWarning && (
+          <div
+            role="alert"
+            data-testid="perishable-warning"
+            className="mt-2 rounded-md border border-status-warning/30 bg-status-warning/10 px-3 py-2 text-xs text-status-warning"
+          >
+            {data.commodity} is perishable: this delivery window (~{Math.ceil(shelfLifeWarning.durationDays)} days) exceeds
+            the recommended {shelfLifeWarning.limitDays}-day transit shelf-life. Buyer and seller should review
+            refrigeration terms before continuing.
+          </div>
         )}
         {errors.deliveryDeadline && touched.deliveryDeadline && <p role="alert" aria-live="polite" className="text-status-danger text-xs mt-1">{errors.deliveryDeadline}</p>}
       </div>

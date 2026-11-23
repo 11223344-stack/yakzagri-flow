@@ -19,7 +19,7 @@ export interface StatusStyle {
   className: string;
 }
 
-const TONE_CLASSES: Record<StatusTone, string> = {
+export const TONE_CLASSES: Record<StatusTone, string> = {
   success: "text-status-success bg-status-success/10 border-status-success/20",
   warning: "text-status-warning bg-status-warning/10 border-status-warning/20",
   danger: "text-status-danger bg-status-danger/10 border-status-danger/20",

@@ -26,8 +26,9 @@ import {
   ModalFooter,
 } from "@/components/ui/Modal";
 import { ConfirmActionModal } from "@/components/ui/ConfirmActionModal";
-import { StatusBadge } from "@/components/ui/StatusBadge";
+import { TradeStatusBadge } from "@/components/trade/TradeStatusBadge";
 import { NextActionCallout } from "@/components/trades/NextActionCallout";
+import { TransitProgressBar } from "@/components/trade/TransitProgressBar";
 import { resolveNextAction } from "@/lib/trades/nextAction";
 
 function formatDate(dateString: string) {
@@ -323,7 +324,7 @@ export default function TradeDetailPage() {
                 <p className="mt-1 text-xs text-text-muted">{translateCopy("ui.updated_702cad2")}{" "}{formatDate(trade.updatedAt)}</p>
               </div>
               <div className="flex flex-col items-start sm:items-end gap-2">
-                <StatusBadge status={trade.status} size="sm" showIcon={false} />
+                <TradeStatusBadge status={trade.status} />
                 {role !== "observer" && (
                   <span className="text-xs text-text-muted capitalize">{translateCopy("ui.your_role_83a4169")}{" "}{role}</span>
                 )}
@@ -339,6 +340,13 @@ export default function TradeDetailPage() {
                 {balance} {asset}
               </p>
             </div>
+          )}
+
+          {status === "DISPATCHED" && trade.estimatedTransitHours && (
+            <TransitProgressBar
+              dispatchedAt={trade.dispatchedAt ?? trade.updatedAt}
+              estimatedHours={trade.estimatedTransitHours}
+            />
           )}
 
           {/* On-chain + off-chain status panel */}
