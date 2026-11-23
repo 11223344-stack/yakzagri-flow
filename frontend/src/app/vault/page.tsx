@@ -15,6 +15,7 @@ import {
   VaultValueCard,
 } from "@/components/vault";
 import { DriverManifestForm, LoadingState, type DriverManifestData } from "@/components/ui";
+import { CollateralBreakdown } from "@/components/vault/CollateralBreakdown";
 import { useAuth } from "@/hooks/useAuth";
 import { formatDate } from "@/lib/i18n";
 import { useWallet } from "@/hooks/useWallet";
@@ -134,6 +135,10 @@ export default function VaultPage() {
         metadata: "Connect wallet to view",
       },
     ];
+
+  const lockedCngn = (recentTrades?.items ?? [])
+    .filter((trade) => ["FUNDED", "DELIVERED", "DISPUTED"].includes(trade.status))
+    .reduce((sum, trade) => sum + (Number.parseFloat(trade.amountCngn) || 0), 0);
 
   const isEmpty =
     !loading && isAuthenticated && stats?.totalTrades === 0 && recentTrades?.items.length === 0;
@@ -356,6 +361,11 @@ export default function VaultPage() {
                 </div>
               )}
             </div>
+
+            <CollateralBreakdown
+              available={Number.parseFloat(balance ?? "0") || 0}
+              locked={lockedCngn}
+            />
 
             <VaultHero
               escrowId={escrowId}

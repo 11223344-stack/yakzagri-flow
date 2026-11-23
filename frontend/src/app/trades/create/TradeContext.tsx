@@ -23,6 +23,9 @@ type TradeContextType = {
   data: TradeData;
   update: (partial: Partial<TradeData>) => void;
   resetTradeWizard: () => void;
+  hasDraft: boolean;
+  resumeDraft: () => void;
+  discardDraft: () => void;
 };
 
 const defaults: TradeData = {
@@ -51,50 +54,56 @@ export function TradeProvider({
   initialData?: Partial<TradeData>;
 }) {
   const [step, setStep] = useState(1);
-  const [resetVersion, setResetVersion] = useState(0);
-  const persistedResetVersion = useRef(0);
-  const [data, setData] = useState<TradeData>(() => {
-    let base: TradeData = defaults;
-    if (typeof window !== "undefined") {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          base = { ...defaults, ...parsed.data } as TradeData;
-        }
-      } catch {}
-    }
-    // Deep-linked initial data takes precedence on first mount
-    return initialData ? { ...base, ...initialData } : base;
-  });
+  const [data, setData] = useState<TradeData>(() => ({ ...defaults, ...initialData }));
+  const [draft, setDraft] = useState<{ data: TradeData; step: number } | null>(null);
+  const dirty = useRef(false);
 
-  // Persist draft locally — survives refresh/restart, replays via offline queue
-  useEffect(() => {
-    if (persistedResetVersion.current !== resetVersion) {
-      persistedResetVersion.current = resetVersion;
-      return;
-    }
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ data, step, savedAt: new Date().toISOString() }));
-    } catch {}
-  }, [data, step, resetVersion]);
-
-  // Restore step on mount
+  // Detect an unfinished draft on mount; the user chooses to resume or discard.
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed.step) setStep(parsed.step);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (parsed?.data && JSON.stringify(parsed.data) !== JSON.stringify(defaults)) {
+        setDraft({ data: { ...defaults, ...parsed.data }, step: parsed.step || 1 });
       }
     } catch {}
   }, []);
 
-  const update = (partial: Partial<TradeData>) =>
+  // Debounced auto-save: 2s after the last edit.
+  useEffect(() => {
+    if (!dirty.current) return;
+    const id = setTimeout(() => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ data, step, savedAt: new Date().toISOString() }));
+      } catch {}
+    }, 2000);
+    return () => clearTimeout(id);
+  }, [data, step]);
+
+  const update = (partial: Partial<TradeData>) => {
+    dirty.current = true;
+    setDraft(null);
     setData((prev) => ({ ...prev, ...partial }));
+  };
+
+  const resumeDraft = () => {
+    if (!draft) return;
+    setData(draft.data);
+    setStep(draft.step);
+    setDraft(null);
+  };
+
+  const discardDraft = () => {
+    setDraft(null);
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {}
+  };
 
   const resetTradeWizard = () => {
-    setResetVersion((version) => version + 1);
+    dirty.current = false;
+    setDraft(null);
     setData(defaults);
     setStep(1);
     try {
@@ -103,7 +112,7 @@ export function TradeProvider({
   };
 
   return (
-    <TradeContext.Provider value={{ step, setStep, data, update, resetTradeWizard }}>
+    <TradeContext.Provider value={{ step, setStep, data, update, resetTradeWizard, hasDraft: draft !== null, resumeDraft, discardDraft }}>
       {children}
     </TradeContext.Provider>
   );

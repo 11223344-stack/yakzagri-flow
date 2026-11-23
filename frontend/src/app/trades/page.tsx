@@ -17,7 +17,7 @@ import { StatusBadge, type TradeStatus as BadgeTradeStatus } from "@/components/
 import { downloadTradesExport } from "@/lib/exportTrades";
 
 type TradeStatus = "all" | "active" | "pending" | "completed" | "disputed";
-type TradeRole = "all" | "buying" | "selling";
+type TradeRole = "all" | "buyer" | "seller" | "mediator";
 
 const FILTERS: { label: string; value: TradeStatus }[] = [
   { label: "All", value: "all" },
@@ -30,7 +30,7 @@ const FILTERS: { label: string; value: TradeStatus }[] = [
 const PAGE_SIZE = 100;
 
 const STATUS_VALUES: TradeStatus[] = ["all", "active", "pending", "completed", "disputed"];
-const ROLE_VALUES: TradeRole[] = ["all", "buying", "selling"];
+const ROLE_VALUES: TradeRole[] = ["all", "buyer", "seller", "mediator"];
 
 function parseStatus(value: string | null): TradeStatus {
   return STATUS_VALUES.includes(value as TradeStatus) ? (value as TradeStatus) : "all";
@@ -46,10 +46,26 @@ function parsePage(value: string | null): number {
 }
 
 const ROLE_FILTERS: { label: string; value: TradeRole }[] = [
-  { label: "All roles", value: "all" },
-  { label: "Buying", value: "buying" },
-  { label: "Selling", value: "selling" },
+  { label: "All", value: "all" },
+  { label: "As Buyer", value: "buyer" },
+  { label: "As Seller", value: "seller" },
+  { label: "As Mediator", value: "mediator" },
 ];
+
+const ROLE_EMPTY_MESSAGES: Record<Exclude<TradeRole, "all">, { title: string; body: string }> = {
+  buyer: { title: "No trades as buyer", body: "You haven't bought anything yet. Trades where you are the buyer will appear here." },
+  seller: { title: "No trades as seller", body: "You haven't listed anything yet. Trades where you are the seller will appear here." },
+  mediator: { title: "No trades as mediator", body: "You haven't been assigned as a mediator on any trade yet." },
+};
+
+function isMediator(trade: TradeResponse, addr?: string | null) {
+  if (!addr) return false;
+  const a = addr.toLowerCase();
+  return (
+    trade.mediatorAddress?.toLowerCase() === a ||
+    Boolean(trade.mediatorAllowlist?.some((m) => m.toLowerCase() === a))
+  );
+}
 
 function matchesStatus(status: string, filter: TradeStatus) {
   if (filter === "all") return true;
@@ -188,8 +204,9 @@ export default function TradesPage() {
     const normalizedAddress = address?.toLowerCase();
     return trades.filter((trade) => {
       if (!matchesStatus(trade.status, activeFilter)) return false;
-      if (activeRole === "buying") return trade.buyerAddress.toLowerCase() === normalizedAddress;
-      if (activeRole === "selling") return trade.sellerAddress.toLowerCase() === normalizedAddress;
+      if (activeRole === "buyer") return trade.buyerAddress.toLowerCase() === normalizedAddress;
+      if (activeRole === "seller") return trade.sellerAddress.toLowerCase() === normalizedAddress;
+      if (activeRole === "mediator") return isMediator(trade, address);
       return true;
     });
   }, [trades, address, activeFilter, activeRole]);
@@ -220,7 +237,7 @@ export default function TradesPage() {
       const isBuyer = trade.buyerAddress.toLowerCase() === address?.toLowerCase();
       return {
         tradeId: trade.tradeId,
-        role: isBuyer ? "buying" : "selling",
+        role: isBuyer ? "buyer" : isMediator(trade, address) ? "mediator" : "seller",
         counterparty: isBuyer ? trade.sellerAddress : trade.buyerAddress,
         amountCngn: trade.amountCngn,
         status: trade.status,
@@ -374,14 +391,20 @@ export default function TradesPage() {
 
               {/* Heading */}
               <h3 className="text-xl font-semibold text-text-primary mb-3">
-                {trades.length === 0 ? translateCopy("ui.no_trades_yet_c6ce989") : translateCopy("ui.no_trades_match_filters")}
+                {trades.length === 0
+                  ? translateCopy("ui.no_trades_yet_c6ce989")
+                  : activeRole !== "all"
+                    ? ROLE_EMPTY_MESSAGES[activeRole].title
+                    : translateCopy("ui.no_trades_match_filters")}
               </h3>
 
               {/* Description */}
               <p className="text-text-secondary text-sm mb-8 max-w-sm mx-auto leading-relaxed">
                 {trades.length === 0
                   ? translateCopy("ui.get_started_by_creating_your_fir_a82b980")
-                  : translateCopy("ui.try_another_trade_filter")}
+                  : activeRole !== "all"
+                    ? ROLE_EMPTY_MESSAGES[activeRole].body
+                    : translateCopy("ui.try_another_trade_filter")}
               </p>
 
               {/* CTA Button */}
