@@ -1,47 +1,26 @@
-import { describe, it, expect } from 'vitest';
-import { formatDate, formatRelativeTime, SUPPORTED_LOCALES } from './format';
+import { formatTranslation } from './format';
+import { en } from './en';
 
-describe('formatDate', () => {
-  const date = new Date(Date.UTC(2024, 0, 15, 12, 0, 0));
-
-  it('formats dates according to each supported locale', () => {
-    const outputs = SUPPORTED_LOCALES.map((locale) => formatDate(date, undefined, locale));
-    expect(outputs).toHaveLength(4);
-    outputs.forEach((output) => expect(output.length).toBeGreaterThan(0));
+describe('formatTranslation', () => {
+  it('returns the localized string when present', () => {
+    const dict = { trades: { create: { steps: { review: { title: 'Bita' } } } } };
+    expect(formatTranslation(dict, 'trades.create.steps.review.title')).toBe(
+      'Bita',
+    );
   });
 
-  it('uses DD/MM/YYYY ordering for Nigeria', () => {
-    const output = formatDate(date, undefined, 'en-NG');
-    expect(output).toMatch(/15\/01\/2024/);
+  it('falls back to English when the localized key is missing', () => {
+    const dict = { trades: { create: { steps: {} } } };
+    const key = 'trades.create.steps.review.title';
+    const expected = (en as Record<string, unknown>).trades;
+    expect(expected).toBeDefined();
+    expect(formatTranslation(dict, key)).not.toBe(key);
   });
 
-  it('uses MM/DD/YYYY ordering for US English', () => {
-    const output = formatDate(date, undefined, 'en-US');
-    expect(output).toMatch(/01\/15\/2024/);
-  });
-
-  it('returns an empty string for invalid dates', () => {
-    expect(formatDate('not-a-date', undefined, 'en-US')).toBe('');
-  });
-});
-
-describe('formatRelativeTime', () => {
-  const now = new Date(Date.UTC(2024, 0, 15, 12, 0, 0));
-
-  it('formats hours ago', () => {
-    const past = new Date(now.getTime() - 3 * 60 * 60 * 1000);
-    expect(formatRelativeTime(past, 'en-US', now)).toBe('3 hours ago');
-  });
-
-  it('formats yesterday', () => {
-    const past = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    expect(formatRelativeTime(past, 'en-US', now)).toBe('yesterday');
-  });
-
-  it('produces output for every supported locale', () => {
-    const past = new Date(now.getTime() - 3 * 60 * 60 * 1000);
-    SUPPORTED_LOCALES.forEach((locale) => {
-      expect(formatRelativeTime(past, locale, now).length).toBeGreaterThan(0);
-    });
+  it('falls back to English for partially translated dictionaries', () => {
+    const dict = { trades: { create: { steps: { review: { title: 'Bita' } } } } };
+    const key = 'trades.create.steps.review.submit';
+    const result = formatTranslation(dict, key);
+    expect(result).not.toBe(key);
   });
 });

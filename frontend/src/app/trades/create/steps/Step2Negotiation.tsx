@@ -1,7 +1,7 @@
 "use client";
 import { t as translateCopy } from "@/lib/i18n";
 
-import { useEffect, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTrade } from "../TradeContext";
 import { validateStep2 } from "../validation";
 import { formatNumber } from "@/lib/i18n/format";
@@ -35,16 +35,24 @@ export default function Step2Negotiation() {
     scheduleAnnouncement(clamped, 100 - clamped);
   };
 
-  const totalValue =
-    data.quantity && data.pricePerUnit
-      ? parseFloat(data.quantity) * parseFloat(data.pricePerUnit)
-      : 0;
+  const totalValue = useMemo(
+    () =>
+      data.quantity && data.pricePerUnit
+        ? parseFloat(data.quantity) * parseFloat(data.pricePerUnit)
+        : 0,
+    [data.quantity, data.pricePerUnit]
+  );
 
-  const buyerLoss = totalValue ? formatNumber((data.buyerRatio / 100) * totalValue) : "—";
-  const sellerLoss = totalValue ? formatNumber((data.sellerRatio / 100) * totalValue) : "—";
-
-  const buyerRefund = totalValue ? (data.buyerRatio / 100) * totalValue : 0;
-  const sellerPayout = totalValue ? (data.sellerRatio / 100) * totalValue : 0;
+  const { buyerLoss, sellerLoss, buyerRefund, sellerPayout } = useMemo(() => {
+    const buyerShare = (data.buyerRatio / 100) * totalValue;
+    const sellerShare = (data.sellerRatio / 100) * totalValue;
+    return {
+      buyerLoss: totalValue ? formatNumber(buyerShare) : "—",
+      sellerLoss: totalValue ? formatNumber(sellerShare) : "—",
+      buyerRefund: totalValue ? buyerShare : 0,
+      sellerPayout: totalValue ? sellerShare : 0,
+    };
+  }, [data.buyerRatio, data.sellerRatio, totalValue]);
 
   const presetRatios = [50, 70, 80, 100];
 
@@ -219,14 +227,14 @@ export default function Step2Negotiation() {
           onClick={() => setStep(1)}
           className="flex-1 py-3 rounded-md border border-border-default text-text-secondary font-semibold hover:border-border-hover transition-colors"
         >
-          {translateCopy("ui.back_5a0f4b1")}
+          {translateCopy("ui.back_5a1e2b7")}
         </button>
         <button
           type="button"
           onClick={handleReview}
           className="flex-1 py-3 rounded-md bg-gold text-text-inverse font-semibold hover:bg-gold-hover transition-colors"
         >
-          {translateCopy("ui.review_trade_8c2e1f0")}
+          {translateCopy("ui.review_9c3f1a2")}
         </button>
       </div>
     </div>
