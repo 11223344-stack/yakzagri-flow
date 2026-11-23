@@ -13,6 +13,7 @@ import {
   VaultFooter,
   VaultHero,
   VaultValueCard,
+  YieldChart,
 } from "@/components/vault";
 import { DriverManifestForm, LoadingState, type DriverManifestData } from "@/components/ui";
 import { useAuth } from "@/hooks/useAuth";
@@ -292,6 +293,8 @@ export default function VaultPage() {
             </div>
           </div>
         </div>
+
+        <YieldChart data={[]} />
 
         {/* Loading skeleton */}
         {loading && (
