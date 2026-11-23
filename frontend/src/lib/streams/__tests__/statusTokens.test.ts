@@ -1,4 +1,4 @@
-import { STREAM_STATUS_TOKENS } from "../statusTokens";
+import { STREAM_HEALTH_TOKENS, STREAM_STATUS_TOKENS } from "../statusTokens";
 
 const palette: Record<string, string> = {
   "bg-emerald-100": "#d1fae5",
@@ -9,6 +9,8 @@ const palette: Record<string, string> = {
   "text-red-900": "#7f1d1d",
   "bg-blue-100": "#dbeafe",
   "text-blue-900": "#1e3a8a",
+  "bg-gray-100": "#f3f4f6",
+  "text-gray-900": "#111827",
 };
 
 function luminance(hex: string): number {
@@ -40,8 +42,18 @@ describe("STREAM_STATUS_TOKENS", () => {
     ]);
   });
 
+  it("covers every derived stream health status", () => {
+    expect(Object.keys(STREAM_HEALTH_TOKENS).sort()).toEqual([
+      "Completed",
+      "Near Depletion",
+      "Paused",
+      "Streaming",
+    ]);
+  });
+
   it("uses WCAG AA text contrast for each badge background", () => {
-    for (const classes of Object.values(STREAM_STATUS_TOKENS)) {
+    const tokenMaps = [STREAM_STATUS_TOKENS, STREAM_HEALTH_TOKENS];
+    for (const classes of tokenMaps.flatMap((tokens) => Object.values(tokens))) {
       const backgroundClass = classes.split(" ").find((name) => name.startsWith("bg-"));
       const foregroundClass = classes.split(" ").find((name) => name.startsWith("text-"));
       if (!backgroundClass || !foregroundClass) {
