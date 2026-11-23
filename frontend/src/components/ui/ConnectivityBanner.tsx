@@ -88,7 +88,35 @@ export function ConnectivityBanner() {
         duration: 0,
       });
 
-      void replay(executeQueuedAction).then(({ succeeded, failed }) => {
+      void replay(async (action) => {
+        if (action.type === "create-trade") {
+          if (!token) {
+            throw new Error("Authenticate your wallet before syncing this trade.");
+          }
+          await submitTradeCreation(token, action.body as CreateTradeRequest, {
+            idempotencyKey: action.idempotencyKey,
+            correlationId: action.correlationId,
+          });
+          return;
+        }
+
+        // Reuse same idempotency key — backend #3 honors key reuse → duplicate-send prevented
+        await request(action.endpoint, {
+          method: action.method,
+          body: action.body ? JSON.stringify(action.body) : undefined,
+          headers: {
+            "Idempotency-Key": action.idempotencyKey,
+            "X-Correlation-Id": action.correlationId,
+          },
+        });
+      }).then(({ succeeded, failed, expired }) => {
+        if (expired.length > 0) {
+          addToast({
+            type: "warning",
+            title: "Expired actions dropped",
+            message: `${expired.length} queued action(s) older than 24 hours were not sent to protect funds.`,
+          });
+        }
         if (failed.length === 0) {
           addToast({ type: "success", title: "Synced", message: `${succeeded.length} queued action(s) completed.` });
         } else {
