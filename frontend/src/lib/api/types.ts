@@ -28,6 +28,8 @@ export interface TradeResponse {
   tradeId: string;
   buyerAddress: string;
   sellerAddress: string;
+  mediatorAddress?: string | null;
+  mediatorAllowlist?: string[] | null;
   amountCngn: TradeMoneyAmount;
   buyerLossBps: number;
   sellerLossBps: number;

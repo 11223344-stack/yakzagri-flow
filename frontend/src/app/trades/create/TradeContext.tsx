@@ -23,6 +23,9 @@ type TradeContextType = {
   data: TradeData;
   update: (partial: Partial<TradeData>) => void;
   resetTradeWizard: () => void;
+  hasDraft: boolean;
+  resumeDraft: () => void;
+  discardDraft: () => void;
 };
 
 const defaults: TradeData = {
@@ -152,20 +155,50 @@ export function TradeProvider({
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed.step) setStep(parsed.step);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (parsed?.data && JSON.stringify(parsed.data) !== JSON.stringify(defaults)) {
+        setDraft({ data: { ...defaults, ...parsed.data }, step: parsed.step || 1 });
       }
     } catch {}
     const session = readSession();
     if (session?.step) setStep(session.step);
   }, []);
 
-  const update = (partial: Partial<TradeData>) =>
+  // Debounced auto-save: 2s after the last edit.
+  useEffect(() => {
+    if (!dirty.current) return;
+    const id = setTimeout(() => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ data, step, savedAt: new Date().toISOString() }));
+      } catch {}
+    }, 2000);
+    return () => clearTimeout(id);
+  }, [data, step]);
+
+  const update = (partial: Partial<TradeData>) => {
+    dirty.current = true;
+    setDraft(null);
     setData((prev) => ({ ...prev, ...partial }));
+  };
+
+  const resumeDraft = () => {
+    if (!draft) return;
+    setData(draft.data);
+    setStep(draft.step);
+    setDraft(null);
+  };
+
+  const discardDraft = () => {
+    setDraft(null);
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {}
+  };
 
   const resetTradeWizard = () => {
-    setResetVersion((version) => version + 1);
+    dirty.current = false;
+    setDraft(null);
     setData(defaults);
     setStep(1);
     try {
@@ -177,7 +210,7 @@ export function TradeProvider({
   };
 
   return (
-    <TradeContext.Provider value={{ step, setStep, data, update, resetTradeWizard }}>
+    <TradeContext.Provider value={{ step, setStep, data, update, resetTradeWizard, hasDraft: draft !== null, resumeDraft, discardDraft }}>
       {children}
     </TradeContext.Provider>
   );
