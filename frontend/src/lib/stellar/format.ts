@@ -38,35 +38,27 @@ export function formatXlm(stroops: number | bigint | string): string {
   return `${stroopsToAmount(stroops, 7)} XLM`;
 }
 
-export type StellarNetwork = "testnet" | "public";
-
-/** Security attributes to spread on any `<a>` pointing at an external explorer. */
-export const EXPLORER_LINK_PROPS = {
-  target: "_blank",
-  rel: "noopener noreferrer",
-} as const;
-
-/** Resolve the active network from `NEXT_PUBLIC_STELLAR_NETWORK` (defaults to testnet). */
-export function getActiveStellarNetwork(): StellarNetwork {
-  return process.env.NEXT_PUBLIC_STELLAR_NETWORK === "public" ? "public" : "testnet";
-}
+const XLM_MAX_DECIMALS = 7;
+const XLM_MIN_DISPLAY_DECIMALS = 4;
 
 /**
- * Build a StellarExpert transaction URL for the active (or given) network.
- * The hash is URL-encoded so untrusted input cannot alter the path.
+ * Format a human-readable XLM amount (not stroops) as a fixed-point string.
+ *
+ * Never emits scientific notation (e.g. `0.00001` stays `0.00001`, not `1e-5`).
+ * Rounds to at most 7 decimals (Stellar precision), then trims trailing zeroes
+ * but always keeps at least 4 decimals for a clean display.
  */
-export function getExplorerTxUrl(
-  txHash: string,
-  network: StellarNetwork = getActiveStellarNetwork(),
-): string {
-  return `https://stellar.expert/explorer/${network}/tx/${encodeURIComponent(txHash.trim())}`;
-}
+export function formatXlmAmount(amount: number | string): string {
+  const value = typeof amount === "string" ? Number(amount.replace(/[,\s]/g, "")) : amount;
+  if (!Number.isFinite(value)) return (0).toFixed(XLM_MIN_DISPLAY_DECIMALS);
 
-/** Build the Horizon REST URL for a transaction on the active (or given) network. */
-export function getHorizonTxUrl(
-  txHash: string,
-  network: StellarNetwork = getActiveStellarNetwork(),
-): string {
-  const base = network === "public" ? "https://horizon.stellar.org" : "https://horizon-testnet.stellar.org";
-  return `${base}/transactions/${encodeURIComponent(txHash.trim())}`;
+  const fixed = value.toFixed(XLM_MAX_DECIMALS);
+  const [whole, frac = ""] = fixed.split(".");
+  let trimmed = frac;
+  while (trimmed.length > XLM_MIN_DISPLAY_DECIMALS && trimmed.endsWith("0")) {
+    trimmed = trimmed.slice(0, -1);
+  }
+  const result = `${whole}.${trimmed}`;
+  // Avoid "-0.0000" for values that round to zero.
+  return /^-0\.0+$/.test(result) ? result.slice(1) : result;
 }
