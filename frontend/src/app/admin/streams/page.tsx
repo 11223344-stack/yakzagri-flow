@@ -14,6 +14,7 @@ import { SkeletonList } from "@/components/ui/SkeletonList";
 import { Button } from "@/components/ui/Button";
 import { StreamClawbackForm } from "@/components/admin/StreamClawbackForm";
 import { VirtualizedList } from "@/components/ui/VirtualizedList";
+import { STREAM_STATUS_TOKENS } from "@/lib/streams/statusTokens";
 import {
   computeStreamHealth,
   formatEstimatedDepletion,
@@ -162,7 +163,11 @@ export default function AdminStreamsPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2">
                       <span className="font-mono text-sm text-text-primary">{stream.streamId}</span>
-                      <span className="text-xs uppercase tracking-wide text-text-secondary">
+                      <span
+                        className={`rounded-full border px-2.5 py-1 text-xs uppercase tracking-wide ${
+                          STREAM_STATUS_TOKENS[stream.status]
+                        }`}
+                      >
                         {stream.status}
                       </span>
                     </div>
