@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { api, type ReputationResponse } from "@/lib/api";
 import { summarizeReputation } from "@/lib/api/reputation";
 import { t as translateCopy } from "@/lib/i18n";
+import { ShareReputationButton } from "@/components/ShareReputationButton";
 
 export default function UserReputationPage() {
   const params = useParams<{ address: string }>();
