@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { StrKey } from "@stellar/stellar-sdk";
+import DOMPurify from "dompurify";
 
 const SECRET_KEY_MESSAGE = "Never enter your private secret key";
 
@@ -89,7 +90,7 @@ export const ManifestSchema = z.object({
     .min(2, t("validation.licensePlateMinLength"))
     .max(20, t("validation.licensePlateMaxLength")),
   vehicleType: z.string().max(50, t("validation.vehicleTypeMaxLength")).optional(),
-  notes: z.string().max(500, t("validation.notesMaxLength")).optional(),
+  notes: sanitizedNotes(500, t("validation.notesMaxLength")).optional(),
 });
 
 export type Manifest = z.infer<typeof ManifestSchema>;
