@@ -2,6 +2,19 @@ import { z } from "zod";
 import { StrKey } from "@stellar/stellar-sdk";
 import DOMPurify from "dompurify";
 
+const SECRET_KEY_MESSAGE = "Never enter your private secret key";
+
+/**
+ * Detects a Stellar secret key (56-char base32 string starting with `S`).
+ * Novice users sometimes paste their secret key into address fields.
+ */
+export const isStellarSecretKey = (value: string): boolean => {
+  const candidate = value.trim();
+  if (!candidate.startsWith("S")) return false;
+  if (candidate.length !== 56) return false;
+  return /^S[A-Z2-7]{55}$/.test(candidate);
+};
+
 const isValidStellarAddress = (value: string): boolean => {
   const address = value.trim();
   if (!address) return false;
@@ -10,51 +23,17 @@ const isValidStellarAddress = (value: string): boolean => {
   return false;
 };
 
-const HTML_ESCAPE_MAP: Record<string, string> = {
-  "<": "&lt;",
-  ">": "&gt;",
-  "&": "&amp;",
-  '"': "&quot;",
-};
-
-/**
- * Escapes HTML special characters so freeform text can be stored and later
- * rendered without being interpreted as markup.
- */
-export const escapeHtml = (value: string): string =>
-  value.replace(/[<>&"]/g, (char) => HTML_ESCAPE_MAP[char] ?? char);
-
-/**
- * Sanitizes freeform user input (e.g. driver notes) to prevent stored XSS:
- * strips HTML tags and `javascript:` protocols via DOMPurify, then escapes
- * remaining special characters before storage/rendering.
- */
-export const sanitizeFreeformText = (value: string): string => {
-  const stripped = DOMPurify.sanitize(value, {
-    ALLOWED_TAGS: [],
-    ALLOWED_ATTR: [],
-    KEEP_CONTENT: true,
-  });
-  const withoutProtocols = stripped.replace(/javascript\s*:/gi, "");
-  return escapeHtml(withoutProtocols);
-};
-
-const sanitizedNotes = (max: number, message: string) =>
+const stellarAddressField = (requiredMessage: string) =>
   z
     .string()
-    .max(max, message)
-    .transform((value) => sanitizeFreeformText(value));
+    .min(1, requiredMessage)
+    .refine((value) => !isStellarSecretKey(value), { message: SECRET_KEY_MESSAGE })
+    .refine((value) => isValidStellarAddress(value), { message: "Invalid Stellar address" });
 
 export const TradeSchema = z.object({
   tradeId: z.string().min(1, "Trade ID is required"),
-  buyerAddress: z
-    .string()
-    .min(1, "Buyer address is required")
-    .refine((value) => isValidStellarAddress(value), { message: "Invalid Stellar address" }),
-  sellerAddress: z
-    .string()
-    .min(1, "Seller address is required")
-    .refine((value) => isValidStellarAddress(value), { message: "Invalid Stellar address" }),
+  buyerAddress: stellarAddressField("Buyer address is required"),
+  sellerAddress: stellarAddressField("Seller address is required"),
   amountCngn: z
     .string()
     .regex(/^\d+(\.\d+)?$/, t("validation.amountPositiveNumber")),
